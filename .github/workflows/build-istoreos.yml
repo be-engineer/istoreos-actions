@@ -10,7 +10,7 @@ on:
         default: false
         type: boolean
       CONFIG_FILE:
-        description: "请选择[seed文件夹内]的配置文件"
+        description: "请选择配置文件"
         required: true
         default: "x86"
         type: choice
@@ -19,6 +19,11 @@ on:
           - rk35xx
           - ac2100
           - x86
+      COMPILATION_INFORMATION:
+        description: "是否显示编译信息"
+        required: false
+        default: true
+        type: boolean
   schedule:
     - cron: 0 1 */8 * *
 
@@ -141,7 +146,7 @@ jobs:
           $GITHUB_WORKSPACE/$DIY_P2_SH
 
       - name: SSH远程连接（make menuconfig）
-        if: env.SSH_ACTION == 'true'
+        if: env.SSH_ACTION == true
         uses: danshui-git/debugger-action@main
 
       - name: 下载软件包
