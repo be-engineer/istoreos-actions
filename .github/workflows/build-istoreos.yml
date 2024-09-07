@@ -82,6 +82,7 @@ jobs:
           echo "------------------------------- 磁盘详情 -------------------------------\n"
           df -Th
           export INPUTS_SSH_ACTION="${{ github.event.inputs.SSH_ACTION }}"
+          export INPUTS_CONFIG_FILE="${{ github.event.inputs.CONFIG_FILE }}"
 
       - name: 初始化编译环境
         env:
