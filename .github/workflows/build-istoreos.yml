@@ -4,28 +4,12 @@ on:
   repository_dispatch:
   workflow_dispatch:
     inputs:
-      SSH_ACTION:
-        description: "SSH远程配置固件"
+      ssh:
+        description: "SSH connection to Actions"
         required: false
-        default: false
-        type: boolean
-      CONFIG_FILE:
-        description: "请选择配置文件"
-        required: true
-        default: "x86"
-        type: choice
-        options:
-          - rk33xx
-          - rk35xx
-          - ac2100
-          - x86
-      COMPILATION_INFORMATION:
-        description: "是否显示编译信息"
-        required: false
-        default: true
-        type: boolean
+        default: "false"
   schedule:
-    - cron: 0 1 */8 * *
+    - cron: 0 16 * * *
 
 env:
   REPO_URL: https://github.com/istoreos/istoreos
@@ -39,17 +23,6 @@ env:
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
   GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-  GITHUB_LINK: https://github.com/${{github.repository}}
-  GIT_ACTOR: ${{github.actor}}
-  GIT_REPOSITORY: ${{github.repository}}
-  RUN_NUMBER: ${{github.run_number}}
-  RUN_WORKFLOW: ${{github.workflow}}
-  REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
-  PUSH_PLUS_TOKEN: ${{ secrets.PUSH_PLUS_TOKEN }}
-  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-  WX_TOKEN: ${{ secrets.WX_TOKEN }}
-  CURL: ${{ secrets.CURL }}
 
 jobs:
   build:
@@ -60,11 +33,10 @@ jobs:
           # - main
           - istoreos-22.03
           # - istoreos-23.05
-        # ARCHITECTURE:
-        #   - rk33xx
-        #   - rk35xx
-        #   - ac2100
-        #   - x86
+        ARCHITECTURE:
+          - rk33xx
+          - rk35xx
+          - x86
         os:
           - ubuntu-22.04
         include:
@@ -92,12 +64,6 @@ jobs:
           echo -e "磁盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l) \n"
           echo "------------------------------- 磁盘详情 -------------------------------\n"
           df -Th
-          cd ${GITHUB_WORKSPACE}
-          bash <(curl -fsSL https://raw.githubusercontent.com/shidahuilang/common/main/custom/first.sh)
-          source ${GITHUB_WORKSPACE}/build/${{ env.FOLDER_NAME }}/settings.ini
-          export INPUTS_SSH_ACTION="${{ github.event.inputs.SSH_ACTION }}"
-          export INPUTS_SSH_ACTION="${{ github.event.inputs.SSH_ACTION }}"
-          export INPUTS_CONFIG_FILE="${{ github.event.inputs.CONFIG_FILE }}"
 
       - name: 初始化编译环境
         env:
@@ -161,9 +127,14 @@ jobs:
           cd openwrt
           $GITHUB_WORKSPACE/$DIY_P2_SH
 
-      - name: SSH远程连接（make menuconfig）
-        if: env.SSH_ACTION == true
+      - name: SSH 连接到 Actions
+        #uses: P3TERX/ssh2actions@v1.0.0
+        #if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
+        if: github.event.inputs.ssh == 'true'
         uses: danshui-git/debugger-action@main
+        env:
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
       - name: 下载软件包
         id: package
