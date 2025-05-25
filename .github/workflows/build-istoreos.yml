@@ -1,4 +1,4 @@
-name: Build iStore OS
+name: Build iStore OS x86
 
 on:
   repository_dispatch:
@@ -84,7 +84,10 @@ jobs:
           sudo rm -rf get-pip.py
           sudo pip install pyelftools
           echo "------------------------------- 清理Docker镜像和软件 -------------------------------"
-          docker rmi `docker images -q`
+          images=$(docker images -q)
+          if [ -n "$images" ]; then
+            docker rmi $images
+          fi
           docker image prune -a -f
           sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* adoptopenjdk* mysql* php* mongodb* dotnet* moby* snapd* android* || true
           sudo -E apt-get -qq autoremove --purge
@@ -173,10 +176,16 @@ jobs:
         id: organize
         if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
         run: |
-          cd openwrt/bin/targets/*/*
-          rm -rf packages
-          echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-          echo "::set-output name=status::success"
+          target_dir=$(find openwrt/bin/targets -type d -mindepth 2 -maxdepth 2 | head -n 1)
+          if [ -d "$target_dir" ]; then
+            cd "$target_dir"
+            rm -rf packages
+            echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+            echo "::set-output name=status::success"
+          else
+            echo "openwrt/bin/targets/*/* 目录不存在，跳过"
+            echo "::set-output name=status::failed"
+          fi
 
       - name: 上传固件目录
         uses: actions/upload-artifact@main
