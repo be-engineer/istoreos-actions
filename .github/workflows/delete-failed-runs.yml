@@ -1,0 +1,29 @@
+name: Delete Workflow Runs
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_status:
+        description: '选择要删除的运行类型'
+        required: true
+        type: choice
+        options:
+          - failure
+          - success
+          - cancelled
+        default: failure
+
+jobs:
+  delete-runs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install GitHub CLI
+        run: sudo apt-get update && sudo apt-get install -y gh jq
+
+      - name: Delete workflow runs by status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run list --repo ${{ github.repository }} --limit 100 --json databaseId,conclusion \
+            | jq -r '.[] | select(.conclusion=="${{ github.event.inputs.run_status }}") | .databaseId' \
+            | xargs -r -I {} gh run delete --repo ${{ github.repository }} {} 
